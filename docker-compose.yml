@@ -1,0 +1,50 @@
+services:
+  # Serviço do Banco de Dados
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=odoo
+      - POSTGRES_PASSWORD=odoo_pwd
+      - POSTGRES_USER=odoo
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - odoo-network
+
+  # Serviço do Odoo (Sua imagem customizada)
+  web:
+    image: dobemtech-odoo
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+      - "8072:8072" # Porta para Longpolling (Chat/Bus)
+    volumes:
+      - odoo-data:/opt/odoo/data
+      # Mapeia sua pasta de addons local para desenvolvimento (Hot-reload)
+      - ./addons:/opt/odoo/addons
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo_pwd
+    networks:
+      - odoo-network
+    # Comando para garantir que ele leia os addons e o banco correto
+    command: 
+      - -i base
+      - --database=odoo
+      - --db_host=db
+      - --db_user=odoo
+      - --db_password=odoo_pwd
+      - --addons-path=/opt/odoo/odoo/addons,/opt/odoo/addons
+
+networks:
+  odoo-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  odoo-data:
